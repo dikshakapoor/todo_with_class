@@ -1,0 +1,8 @@
+const TODO_STATES = {
+    COMPLETED: "COMPLETED",
+    EDITED: "EDITED",
+    REMOVED: "REMOVED",
+    REMOVE_ALL: "REMOVE_ALL",
+}
+
+export default TODO_STATES;
