@@ -25,8 +25,9 @@
 // where is view?
 
 import TODO_STATES from "./todoStates";
-import uiController from "./uIController";
+// import uiController from "./uIController";
 import { closestNode, childNode } from "./domUtils";
+import { renderCard, applyEditedTask } from "./view"
 
 let taskMap = new Map();
 
@@ -36,29 +37,29 @@ let initFn = function () {
     this.text = task;
     this.id = Date.now();
     this.status = "";
-    this.updated = false;
   };
 
   const addNewTask = function (task) {
     let newTask = new Task(task);
     taskMap.set(newTask.id, newTask);
+    return newTask;
+  }
+
+  function renderCardInitially(task) {
+    let element = document.getElementById("taskListWrapper");
+    return renderCard(task, element);
   }
 
   const createNewTask = function () {
-    let task = uiController.getInput().trim();
+    let task = getInput().trim();
     if (!task) return;
-    // add item to datacontroller
-    addNewTask(task);
-    //add item to UIController
-    uiController.renderItems(taskMap);
-    // clearing input field
-    uiController.clearInputField();
+    let newTask = addNewTask(task);
+    renderCardInitially(newTask);
+    clearInputField();
   };
 
   const setStatus = function (itemId, taskStatus) {
     taskMap.get(itemId).status = taskStatus;
-    taskMap.get(itemId).updated = true;
-
   }
 
   function getTypeOfEvent(event) {
@@ -74,30 +75,121 @@ let initFn = function () {
       switch (eventType) {
 
         case TODO_STATES.COMPLETED: {
-          setStatus(itemId, TODO_STATES.COMPLETED);
-          const targetElement = childNode(cardElement, "text");
-          uiController.renderItems(taskMap, targetElement);
-          taskMap.get(itemId).updated = false;
+          // setStatus(itemId, TODO_STATES.COMPLETED);
+          const selectedElement = childNode(cardElement, "text");
+          selectedElement.classList.add("checked");
+          // renderItems(targetElement);
+          // taskMap.get(itemId).isUpdated = false;
           break;
         }
 
         case TODO_STATES.REMOVED: {
-          setStatus(itemId, TODO_STATES.REMOVED)
-          uiController.renderItems(taskMap, cardElement);
+          // setStatus(itemId, TODO_STATES.REMOVED);
+          cardElement.remove();
+          // renderItems(cardElement);
           taskMap.delete(itemId)
           break;
         }
 
         case TODO_STATES.EDITED: {
-          setStatus(itemId, TODO_STATES.EDITED);
-          const targetElement = childNode(cardElement, "text");
-          uiController.renderItems(taskMap, targetElement);
-          taskMap.get(itemId).updated = false;
+          // setStatus(itemId, TODO_STATES.EDITED);
+          const selectedElement = childNode(cardElement, "text");
+          selectedElement.classList.remove("checked")
+          selectedElement.innerHTML = "";
+          let element = document.createElement("input");
+          selectedElement.appendChild(element);
+          element.focus();
+          let task = taskMap.get(itemId);
+          element.value = task.text;
+          element.addEventListener("keydown", handleKeyPress);
+          function handleKeyPress(event) {
+            if (event.keyCode !== 13 || event.which !== 13) return null;
+            fetchEditedTask(selectedElement, element, task.id);
+          }
+          element.onblur = function () {
+            fetchEditedTask(selectedElement, element, task.id);
+          }
+          // renderItems(targetElement);
+          // taskMap.get(itemId).isUpdated = false;
           break;
         }
       }
     }
   }
+
+  function fetchEditedTask(selectedElement, element, id) {
+    let editedTaskDiscription = element.value;
+    applyEditedTask(editedTaskDiscription, selectedElement)
+    document.dispatchEvent(new CustomEvent("editedTaskDiscription", {
+      detail: {
+        descriptiion: editedTaskDiscription,
+        id: id
+      }
+    }))
+  }
+
+  function removeAllTask() {
+    document.getElementById("taskListWrapper").innerHTML = "";
+  }
+
+  function getInput() {
+    return document.querySelector("#todoDiscriptionInputField").value;
+  }
+
+  function clearInputField() {
+    document.getElementById("todoDiscriptionInputField").value = "";
+  }
+
+
+  // function renderItems(selectedElement) {
+
+  //   taskMap.forEach(function (task) {
+
+  //     // if (task.status === "" && (task.isUpdated === false)) {
+  //     //   let element = document.getElementById("taskListWrapper");
+  //     //   task.isUpdated = true;
+  //     //   return renderCard(task, element);
+  //     // }
+
+  //     // if (task.isUpdated === true && task.status) {
+  //     switch (task.status) {
+
+  //       case TODO_STATES.COMPLETED: {
+  //         selectedElement.classList.add("checked")
+  //         break;
+  //       }
+
+  //       case TODO_STATES.EDITED: {
+  //         selectedElement.classList.remove("checked")
+  //         selectedElement.innerHTML = "";
+  //         let element = document.createElement("input");
+  //         selectedElement.appendChild(element);
+  //         element.focus();
+  //         element.value = task.text;
+  //         element.addEventListener("keydown", handleKeyPress);
+  //         function handleKeyPress(event) {
+  //           if (event.keyCode !== 13 || event.which !== 13) return null;
+  //           fetchEditedTask(selectedElement, element, task.id);
+  //         }
+  //         element.onblur = function () {
+  //           fetchEditedTask(selectedElement, element, task.id);
+  //         }
+  //         break;
+  //       }
+
+  //       case TODO_STATES.REMOVED: {
+  //         selectedElement.remove();
+  //         break;
+  //       }
+
+  //       case TODO_STATES.MARK_ALL_COMPLETE: {
+  //         selectedElement.classList.add("checked");
+  //         break;
+  //       }
+  //     }
+  //   }
+  //   );
+  // }
 
   function addTaskOnEnter(event) {
     if (event != undefined && (event.keyCode === 13 || event.which === 13)) {
@@ -110,8 +202,7 @@ let initFn = function () {
       setStatus(task.id, TODO_STATES.MARK_ALL_COMPLETE);
       const cardElement = closestNode(document.getElementById(task.id), "card");
       const targetElement = childNode(cardElement, "text");
-      uiController.renderItems(taskMap, targetElement);
-      taskMap.get(task.id).updated = false;
+      targetElement.classList.add("checked");
     });
   }
 
@@ -120,13 +211,14 @@ let initFn = function () {
     const { descriptiion, id } = taskObj;
     taskMap.get(id).text = descriptiion;
     taskMap.get(id).status = "";
-    taskMap.get(id).updated = true;
+    taskMap.get(id).isUpdated = true;
   }
 
   function deleteAll() {
     taskMap.clear();
-    uiController.removeAllTask();
+    removeAllTask();
   }
+
 
   const setEventListeners = function () {
 
