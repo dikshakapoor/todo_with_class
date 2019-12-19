@@ -1,4 +1,4 @@
-import TODO_STATES from "./TodoStates";
+import TODO_STATES from "./todoStates";
 
 let uiController = (function () {
 

@@ -1,4 +1,8 @@
 
+// camel case ids and classes , files, variables,
+
+// render only the change - edit, delete 
+
 // find, closest(include current node) 
 
 // find("#abc")
@@ -7,41 +11,36 @@
 // closest(".abc")
 // closest("#abc")
 
-// camel case ids and classes 
-
-// render only the change - edit, delete 
-
-// modular pattern follow properly
+// modular pattern follow properly, why to use IIFE
 
 // use m - VC - use instances - JS classes - JS OOP
 
-import TODO_STATES from "./TodoStates";
-import uiController from "./UIController";
-let controller = (function (uiController) {
 
-  const TaskObject = function (task) {
+//new
+
+//nothing to be shared by closure-- 
+
+//difference between class, object, instance - naming convention
+
+// where is view?
+
+import TODO_STATES from "./todoStates";
+import uiController from "./uIController";
+import { closestNode, childNode } from "./domUtils";
+
+let taskMap = new Map();
+
+let initFn = function () {
+
+  const Task = function (task) {
     this.text = task;
     this.id = Date.now();
     this.status = "";
     this.updated = false;
   };
 
-  let taskMap = new Map();
-
-  const closestNode = function (element, dataAttribute) {
-    while (element.getAttribute("data-type") !== dataAttribute) {
-      element = element.parentNode;
-    }
-    return element;
-  }
-
-  const childNode = function (element, dataAttribute) {
-    const getChildNode = element.querySelector(`[data-type = ${dataAttribute}]`);
-    return getChildNode;
-  }
-
   const addNewTask = function (task) {
-    let newTask = new TaskObject(task);
+    let newTask = new Task(task);
     taskMap.set(newTask.id, newTask);
   }
 
@@ -160,7 +159,9 @@ let controller = (function (uiController) {
       setEventListeners();
     }
   };
-})(uiController);
+};
+
+let controller = initFn();
 
 controller.init();
 
