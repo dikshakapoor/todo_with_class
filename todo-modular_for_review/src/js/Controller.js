@@ -18,25 +18,23 @@
 
 //new
 
-//nothing to be shared by closure-- 
+//nothing to be shared by closure
 
 //difference between class, object, instance - naming convention
 
 // where is view?
 
 import TODO_STATES from "./todoStates";
-// import uiController from "./uIController";
 import { closestNode, childNode } from "./domUtils";
-import { renderCard, applyEditedTask } from "./view"
+import { renderCard, renderEditedTask } from "./view"
 
 let taskMap = new Map();
 
-let initFn = function () {
+let controller = (function () {
 
   const Task = function (task) {
     this.text = task;
     this.id = Date.now();
-    this.status = "";
   };
 
   const addNewTask = function (task) {
@@ -45,24 +43,27 @@ let initFn = function () {
     return newTask;
   }
 
-  function renderCardInitially(task) {
-    let element = document.getElementById("taskListWrapper");
-    return renderCard(task, element);
-  }
-
   const createNewTask = function () {
     let task = getInput().trim();
     if (!task) return;
     let newTask = addNewTask(task);
-    renderCardInitially(newTask);
+    let element = document.getElementById("taskListWrapper");
+    renderCard(newTask, element);
     clearInputField();
   };
 
-  const setStatus = function (itemId, taskStatus) {
-    taskMap.get(itemId).status = taskStatus;
+  const editTask = function (editedTaskDiscription, textElement, id) {
+    taskMap.get(id).text = editedTaskDiscription;
+    renderEditedTask(editedTaskDiscription, textElement);
   }
 
-  function getTypeOfEvent(event) {
+  const handleKeyPress = function (event, textElement, taskId) {
+    if (event.keyCode !== 13 || event.which !== 13) return null;
+    let editedTaskDiscription = event.currentTarget.value;
+    editTask(editedTaskDiscription, textElement, taskId);
+  }
+
+  const getTypeOfEvent = function (event) {
     let eventType = event.target.getAttribute("data-type");
     if (
       eventType === TODO_STATES.COMPLETED ||
@@ -72,153 +73,70 @@ let initFn = function () {
       const element = event.target;
       const itemId = parseInt(closestNode(element, "card").id);
       const cardElement = document.getElementById(itemId);
+      const textElement = childNode(cardElement, "text");
       switch (eventType) {
 
         case TODO_STATES.COMPLETED: {
-          // setStatus(itemId, TODO_STATES.COMPLETED);
-          const selectedElement = childNode(cardElement, "text");
-          selectedElement.classList.add("checked");
-          // renderItems(targetElement);
-          // taskMap.get(itemId).isUpdated = false;
+          textElement.classList.add("checked");
           break;
         }
 
         case TODO_STATES.REMOVED: {
-          // setStatus(itemId, TODO_STATES.REMOVED);
           cardElement.remove();
-          // renderItems(cardElement);
           taskMap.delete(itemId)
           break;
         }
 
         case TODO_STATES.EDITED: {
-          // setStatus(itemId, TODO_STATES.EDITED);
-          const selectedElement = childNode(cardElement, "text");
-          selectedElement.classList.remove("checked")
-          selectedElement.innerHTML = "";
+          textElement.classList.remove("checked")
+          textElement.innerHTML = "";
           let element = document.createElement("input");
-          selectedElement.appendChild(element);
+          textElement.appendChild(element);
           element.focus();
           let task = taskMap.get(itemId);
           element.value = task.text;
-          element.addEventListener("keydown", handleKeyPress);
-          function handleKeyPress(event) {
-            if (event.keyCode !== 13 || event.which !== 13) return null;
-            fetchEditedTask(selectedElement, element, task.id);
-          }
+          element.addEventListener("keydown", (event) => { handleKeyPress(event, textElement, task.id) });
           element.onblur = function () {
-            fetchEditedTask(selectedElement, element, task.id);
+            let editedTaskDiscription = element.value;
+            editTask(editedTaskDiscription, textElement, task.id);
           }
-          // renderItems(targetElement);
-          // taskMap.get(itemId).isUpdated = false;
           break;
         }
       }
     }
   }
 
-  function fetchEditedTask(selectedElement, element, id) {
-    let editedTaskDiscription = element.value;
-    applyEditedTask(editedTaskDiscription, selectedElement)
-    document.dispatchEvent(new CustomEvent("editedTaskDiscription", {
-      detail: {
-        descriptiion: editedTaskDiscription,
-        id: id
-      }
-    }))
-  }
 
-  function removeAllTask() {
+  const removeAllTask = function () {
     document.getElementById("taskListWrapper").innerHTML = "";
   }
 
-  function getInput() {
+  const getInput = function () {
     return document.querySelector("#todoDiscriptionInputField").value;
   }
 
-  function clearInputField() {
+  const clearInputField = function () {
     document.getElementById("todoDiscriptionInputField").value = "";
   }
-
-
-  // function renderItems(selectedElement) {
-
-  //   taskMap.forEach(function (task) {
-
-  //     // if (task.status === "" && (task.isUpdated === false)) {
-  //     //   let element = document.getElementById("taskListWrapper");
-  //     //   task.isUpdated = true;
-  //     //   return renderCard(task, element);
-  //     // }
-
-  //     // if (task.isUpdated === true && task.status) {
-  //     switch (task.status) {
-
-  //       case TODO_STATES.COMPLETED: {
-  //         selectedElement.classList.add("checked")
-  //         break;
-  //       }
-
-  //       case TODO_STATES.EDITED: {
-  //         selectedElement.classList.remove("checked")
-  //         selectedElement.innerHTML = "";
-  //         let element = document.createElement("input");
-  //         selectedElement.appendChild(element);
-  //         element.focus();
-  //         element.value = task.text;
-  //         element.addEventListener("keydown", handleKeyPress);
-  //         function handleKeyPress(event) {
-  //           if (event.keyCode !== 13 || event.which !== 13) return null;
-  //           fetchEditedTask(selectedElement, element, task.id);
-  //         }
-  //         element.onblur = function () {
-  //           fetchEditedTask(selectedElement, element, task.id);
-  //         }
-  //         break;
-  //       }
-
-  //       case TODO_STATES.REMOVED: {
-  //         selectedElement.remove();
-  //         break;
-  //       }
-
-  //       case TODO_STATES.MARK_ALL_COMPLETE: {
-  //         selectedElement.classList.add("checked");
-  //         break;
-  //       }
-  //     }
-  //   }
-  //   );
-  // }
-
-  function addTaskOnEnter(event) {
+  debugger;
+  const addTaskOnEnter = function (event) {
     if (event != undefined && (event.keyCode === 13 || event.which === 13)) {
       createNewTask();
     }
   }
 
-  function markAllComplete() {
+  const markAllComplete = function () {
     taskMap.forEach(function (task) {
-      setStatus(task.id, TODO_STATES.MARK_ALL_COMPLETE);
       const cardElement = closestNode(document.getElementById(task.id), "card");
       const targetElement = childNode(cardElement, "text");
       targetElement.classList.add("checked");
     });
   }
 
-  function getEditedTask(event) {
-    let taskObj = event.detail;
-    const { descriptiion, id } = taskObj;
-    taskMap.get(id).text = descriptiion;
-    taskMap.get(id).status = "";
-    taskMap.get(id).isUpdated = true;
-  }
-
-  function deleteAll() {
+  const deleteAll = function () {
     taskMap.clear();
     removeAllTask();
   }
-
 
   const setEventListeners = function () {
 
@@ -242,8 +160,6 @@ let initFn = function () {
       .getElementById("deleteAll")
       .addEventListener("click", deleteAll);
 
-    document.addEventListener("editedTaskDiscription", getEditedTask);
-
   };
 
   return {
@@ -251,11 +167,8 @@ let initFn = function () {
       setEventListeners();
     }
   };
-};
+})()
 
-let controller = initFn();
-
-controller.init();
 
 export default controller;
 

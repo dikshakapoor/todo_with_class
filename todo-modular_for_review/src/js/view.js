@@ -11,12 +11,11 @@ export function renderCard(task, element) {
     html = html.replace("%text%", task.text);
     html = html.replace("%id%", task.id);
     element.insertAdjacentHTML("beforeend", html);
-    // task.updated = true;
 }
 
-export function applyEditedTask(editedTaskDiscription, selectedElement) {
+export function renderEditedTask(editedTaskDiscription, selectedElement) {
     selectedElement.innerHTML = "";
-    let editedCardHtml = '<div class = "task" id = %id%><b>%editedText%</b>';
+    let editedCardHtml = '<div class = "task"><b>%editedText%</b>';
     editedCardHtml = editedCardHtml.replace("%editedText%", editedTaskDiscription);
     selectedElement.insertAdjacentHTML("afterbegin", editedCardHtml)
 }
